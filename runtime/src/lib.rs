@@ -67,6 +67,8 @@ mod template;
 /// Used for the module kitties in `./kitties.rs`
 mod kitties;
 
+mod auction;
+
 mod linked_item;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -267,6 +269,10 @@ impl kitties::Trait for Runtime {
 	type Currency = Balances;
 }
 
+impl auction::Trait for Runtime {
+	type Event = Event;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -284,6 +290,7 @@ construct_runtime!(
 		TemplateModule: template::{Module, Call, Storage, Event<T>},
 		// Substrate Kitties module
 		Kitties: kitties::{Module, Storage, Call, Event<T>},
+		Auction: auction::{Module, Storage, Call, Event<T>},
 	}
 );
 
