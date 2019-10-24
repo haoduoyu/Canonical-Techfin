@@ -75,7 +75,7 @@ decl_module! {
 		}
 		
 		/// 修改拍卖物品状态(status = 3时拍卖终止)
-		pub fn change_auction_statu(origin, auction_id: [u8; 16], status: u8) {
+		pub fn change_auction_status(origin, auction_id: [u8; 16], status: u8) {
 			let sender = ensure_signed(origin)?;
 
 			// 1、判断是否拥有此拍卖纪录
@@ -91,6 +91,7 @@ decl_module! {
 			auction_info.status = status;
 			Auctions::insert(auction_id, auction_info);
 		}
+
 	}
 }
 
