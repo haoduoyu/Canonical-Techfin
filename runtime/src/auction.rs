@@ -119,6 +119,31 @@ decl_module! {
 			}
 
 		}
+
+		/// 结算(应该为定时任务判断时间主动结束，此处采用用户手动结束方式)
+		/// 若为定时任务模式，则需循环拍卖列表进行各自的判断
+		pub fn auction_settle_accounts(origin, auction_id: [u8; 16]) {
+			let sender = ensure_signed(origin)?;
+
+			// 1、判断拍卖
+			ensure!(!Auctions::exists(&auction_id), "不存在此拍卖");
+			// 2、获取拍卖信息
+			let mut auction_info = Self::auction(auction_id).unwrap();
+			let now = 1; // 应获取当前时间
+
+			if auction_info.status == 0 {
+				//  若为已经完成拍卖，则结束不进行任何操作
+			} else if auction_info.end_time - now < 0 {
+				// 此条件中应放入定时任务
+				if auction_info.end_price - auction_info.begin_price == 0 {
+					Self::change_auction_status(&sender, auction_id, 3);
+				} else {
+					Self::change_auction_status(&sender, auction_id, 0); // 此处可不进行操作，正常应有定时操作进行时间方面的检查
+				}
+			} else {
+				Self::change_auction_status(&sender, auction_id, 0);
+			}
+		}
 	}
 }
 
