@@ -271,6 +271,8 @@ impl kitties::Trait for Runtime {
 
 impl auction::Trait for Runtime {
 	type Event = Event;
+    type AuctionIndex = u32;
+    type Currency = Balances;
 }
 
 construct_runtime!(
