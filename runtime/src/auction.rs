@@ -12,6 +12,7 @@ pub trait Trait: system::Trait {
 }
 type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
+
 #[derive(Encode, Decode, Clone, PartialEq)]
 #[cfg_attr(feature = "std", derive(Debug))]
 pub enum AuctionStatus {
@@ -65,15 +66,10 @@ decl_module! {
 		fn deposit_event() = default;
 
 		/// 创建拍卖物品纪录（上市），各参数含义参照struct
-		pub fn create_auction(origin, item_id: [u8; 16], begin_time: u64, start_price: BalanceOf<T>, bid_range: BalanceOf<T>, item_seller: T::AccountId) {
+		pub fn create_auction(origin, item_id: [u8; 16], begin_time: u64, end_time: Option<u64>, start_price: BalanceOf<T>, bid_range: BalanceOf<T>, item_seller: T::AccountId) {
 			let sender = ensure_signed(origin)?;
 
-            // 参数检查
-            ensure!((bid_range > <BalanceOf<T>>::from(0)), "加价幅度不可为0");
-			
-            // 1、判断当前物品是否在拍卖状态
-            ensure!(!<AuctionsItemRecord<T>>::exists(&item_id), "此物品已在拍卖状态");
-
+			Self::create_check(item_id, begin_time, end_time, start_price, bid_range, item_seller.clone())?;
 
 			// 2、当可被拍卖时，创建拍卖纪录
             let record_id = Self::random_value(&sender);
@@ -81,7 +77,7 @@ decl_module! {
                 record_id,
                 item_id,
                 begin_time,
-                end_time: None,
+                end_time,
                 start_price,
                 current_price: <BalanceOf<T>>::from(0),
                 bid_range,
@@ -108,7 +104,7 @@ decl_module! {
 			let auction_record = Self::record(record_id).unwrap();
 			ensure!(auction_record.status == AuctionStatus::NotStarted, "此拍卖品当前不可拍卖");
 
-			let now: u64 = Self::get_current_time();
+			let now = Self::get_current_time();
 			ensure!(now >= auction_record.begin_time, "拍卖尚未开始");
 
 			// 已超时不可拍卖
@@ -167,6 +163,18 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+	fn create_check(item_id: [u8; 16], begin_time: u64, end_time: Option<u64>, start_price: BalanceOf<T>, bid_range: BalanceOf<T>, _item_seller: T::AccountId) -> result::Result<(), &'static str>{
+            ensure!((start_price > <BalanceOf<T>>::from(0)), "起拍价格不可为0"); //起拍价格为0会导致后续处理时遇到几个难搞的边界条件，从安全性角度建议剔除
+			ensure!((bid_range > <BalanceOf<T>>::from(0)), "加价幅度不可为0");
+            ensure!(!<AuctionsItemRecord<T>>::exists(&item_id), "此物品已在拍卖状态");
+			ensure!(begin_time > Self::get_current_time(),"开始时间不可以是过去");
+			if end_time.is_some(){
+				ensure!(begin_time < end_time.unwrap(),"结束时间必须晚于开始时间");
+			}
+			//TODO: start_price 小于货币发行总量 过大的数值会让人担心后续处理时是否有加法导致其溢出
+			//TODO: bid_range 小于货币发行总量 担忧同上
+			Ok(())
+	}
 	/// 创建随机数用于标记唯一身份
 	fn random_value(sender: &T::AccountId) -> [u8; 16] {
 		let payload = (<system::Module<T>>::random_seed(), sender, <system::Module<T>>::extrinsic_index(), <system::Module<T>>::block_number());
@@ -193,6 +201,7 @@ impl<T: Trait> Module<T> {
     /// 获取当前时间
     pub fn get_current_time() -> u64 {
         // TODO: 获取当前时间
-        0
+        // TODO: 由上个区块决定的时间？ or 此validator认为正确的时间？
+		0
     }
 }
