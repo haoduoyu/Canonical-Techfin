@@ -158,6 +158,10 @@ decl_module! {
 			} else {
 				Self::change_auction_status(&sender, item_id, AuctionStatus::Selled)?;
 			}
+
+				// transfer auction balance
+//				T::Currency::transfer(winner, sender, value)?;
+
 		}
 	}
 }
