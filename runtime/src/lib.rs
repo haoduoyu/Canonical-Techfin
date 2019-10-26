@@ -186,6 +186,7 @@ impl system::Trait for Runtime {
 	/// Portion of the block weight that is available to all normal transactions.
 	type AvailableBlockRatio = AvailableBlockRatio;
 	type Version = Version;
+	
 }
 
 parameter_types! {
